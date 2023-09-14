@@ -3,6 +3,7 @@ const bodyparser = require('body-parser');
 const { use } = require('express/lib/application');
 const axios = require('axios');
 const sqlite3 = require('sqlite3');
+const { send } = require('express/lib/response');
 
 const app = express();
 app.use(bodyparser.json());
@@ -29,19 +30,21 @@ db.close((err) => {
 });
 */
 
-function userExists(username) {
-    var user = {};
-    var found = false;
-    users.forEach(u => {
-        if (u.username === username) {
-            user = u;
-            found = true;
-        }
+function authenticate_user(username, password, callback) {
+    var data = [];
+    db.serialize(() => {
+        db.each(`SELECT ID, Name
+                 FROM student
+                 WHERE Username='` + username + `' AND Password='` +
+            password + `'`, (err, row) => {
+                if (err) {
+                    console.error(err.message);
+                }
+                data.push(row);
+            }, function () {
+                callback(data);
+            });
     });
-    if (found) {
-        return user;
-    }
-    return null;
 }
 
 app.get('/get_all_grades', function (req, res) {
@@ -76,6 +79,65 @@ app.get('/get_all_classes', function (req, res) {
     });
 });
 
+app.get('/get_all_classes_for_grade', function (req, res) {
+    var grade = req.query.grade;
+    var data = [];
+    if (grade == null || grade === "") {
+        res.send("");
+        return;
+    }
+    db.serialize(() => {
+        db.each(`SELECT c.ID, c.Name, c.ScheduleDay, g. ID 'GradeID', g.Name 'Grade'
+            FROM class c INNER JOIN grade g ON c.GradeID=g.ID 
+            WHERE g.Name='` + grade + `'`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            res.send(data);
+        });
+    });
+});
+
+app.get('/get_all_students', function (req, res) {
+    var data = [];
+    db.serialize(() => {
+        db.each(`SELECT s.ID, s.Name, s.Paid, c.Name 'Class', g.Name 'Grade'
+            FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
+            INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            res.send(data);
+        });
+    });
+});
+
+app.get('/get_all_students_for_grade', function (req, res) {
+    var grade = req.query.grade;
+    var data = [];
+    if (grade == null || grade === "") {
+        res.send("");
+        return;
+    }
+    db.serialize(() => {
+        db.each(`SELECT s.ID, s.Name, s.Paid, c.Name 'Class', g.Name 'Grade'
+            FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
+            INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID
+            WHERE g.Name='` + grade + `'`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            res.send(data);
+        });
+    });
+});
+
 app.get('/login', function (req, res) {
     var username = req.query.username;
     var password = req.query.password;
@@ -83,25 +145,22 @@ app.get('/login', function (req, res) {
     if (username === '' || password === '') {
         res.json('username/password required');
     } else {
-        var user = authenticateUser(username, password);
-        if (user) {
-            console.log('login. ', user);
-            res.status(200).json(user);
-        } else {
-            res.json('invalid username/password');
-        }
+        authenticate_user(username, password, function (data) {
+            // console.log(data);
+            if (data) {
+                // console.log('login. ', data);
+                res.status(200).json(data);
+            } else {
+                res.json('invalid username/password');
+            }
+        });
     }
 });
 
 app.get('/logout', function (req, res) {
     console.log('logout. ', req.query);
     var username = req.query.username;
-    var user = userExists(username);
-    if (user) {
-
-    } else {
-
-    }
+    res.send(username);
 });
 
 
