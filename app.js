@@ -4,6 +4,10 @@ const { use } = require('express/lib/application');
 const axios = require('axios');
 const sqlite3 = require('sqlite3');
 const { send } = require('express/lib/response');
+const {
+    v1: uuidv1,
+    v4: uuidv4,
+} = require('uuid');
 
 const app = express();
 app.use(bodyparser.json());
@@ -18,7 +22,8 @@ let db = new sqlite3.Database("tutoring_app.db", sqlite3.OPEN_READWRITE, (err) =
         console.log("Error Occurred - " + err.message);
     }
     else {
-        console.log("DataBase Connected");
+        console.log("Database Connected");
+        // console.log(uuidv1())
     }
 });
 /*
@@ -83,7 +88,7 @@ app.get('/get_all_classes_for_grade', function (req, res) {
     var grade = req.query.grade;
     var data = [];
     if (grade == null || grade === "") {
-        res.send("");
+        res.send("error");
         return;
     }
     db.serialize(() => {
@@ -120,7 +125,7 @@ app.get('/get_all_students_for_grade', function (req, res) {
     var grade = req.query.grade;
     var data = [];
     if (grade == null || grade === "") {
-        res.send("");
+        res.send("error");
         return;
     }
     db.serialize(() => {
@@ -136,6 +141,24 @@ app.get('/get_all_students_for_grade', function (req, res) {
             res.send(data);
         });
     });
+});
+
+app.get('/add_student_in_class_waiting', function (req, res) {
+    var classID = req.query.classID;
+    var studentID = req.query.studentID;
+    if (classID == null || classID === "" ||
+        studentID == null || studentID === "") {
+        res.send("error");
+        return;
+    }
+    db.run('INSERT INTO student_class(ID, Student_ID, Class_ID) VALUES(?, ?, ?)', 
+        [uuidv1(), studentID, classID], (err) => {
+        if (err) {
+            return console.log(err.message);
+        }
+        console.log('student record added in class in waiting');
+        res.send('student record added in class in waiting');
+    })
 });
 
 app.get('/login', function (req, res) {
