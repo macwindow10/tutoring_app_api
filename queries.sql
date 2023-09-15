@@ -1,5 +1,6 @@
 
 --SELECT * FROM grade;
+SELECT * FROM student;
 
 SELECT c.ID, c.Name, c.ScheduleDay, g. ID 'GradeID', g.Name 'Grade'
 FROM class c INNER JOIN grade g ON c.GradeID=g.ID ;
