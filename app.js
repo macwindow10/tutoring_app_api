@@ -156,7 +156,7 @@ app.get('/register', function (req, res) {
         res.send("error");
         return;
     }
-    
+
     var data = [];
     db.serialize(() => {
         db.each(`SELECT s.ID
@@ -192,14 +192,32 @@ app.get('/add_student_in_class_waiting', function (req, res) {
         res.send("error");
         return;
     }
-    db.run('INSERT INTO student_class(ID, Student_ID, Class_ID) VALUES(?, ?, ?)',
-        [uuidv1(), studentID, classID], (err) => {
+    var data = [];
+    db.serialize(() => {
+        db.each(`SELECT ID
+            FROM student_class 
+            WHERE Student_ID='` + studentID + `' AND Class_ID='` + classID + `'`, (err, row) => {
             if (err) {
-                return console.log(err.message);
+                console.error(err.message);
             }
-            console.log('student record added in class in waiting');
-            res.send('student record added in class in waiting');
-        })
+            data.push(row);
+        }, function () {
+            console.log(data);
+            if (data.length == 0) {
+                db.run('INSERT INTO student_class(ID, Student_ID, Class_ID) VALUES(?, ?, ?)',
+                    [uuidv1(), studentID, classID], (err) => {
+                        if (err) {
+                            return console.log(err.message);
+                        }
+                        console.log('student record added in class in waiting');
+                        res.send('student record added in class in waiting');
+                    });
+            } else {
+                console.log('student already exists in this class');
+                res.send("student already exists in this class");
+            }
+        });
+    });
 });
 
 app.get('/login', function (req, res) {
