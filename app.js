@@ -143,6 +143,47 @@ app.get('/get_all_students_for_grade', function (req, res) {
     });
 });
 
+app.get('/register', function (req, res) {
+    var name = req.query.name;
+    var username = req.query.username;
+    var password = req.query.password;
+    var paid = req.query.paid;
+    if (name == null || name === "" ||
+        username == null || username === "" ||
+        password == null || password === "" ||
+        paid == null || paid === "") {
+
+        res.send("error");
+        return;
+    }
+    
+    var data = [];
+    db.serialize(() => {
+        db.each(`SELECT s.ID
+            FROM student s 
+            WHERE username='` + username + `'`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            if (data.length == 0) {
+                let paidValue = (paid === "true" ? 1 : 0)
+                db.run('INSERT INTO student(ID, Name, Username, Password, Paid) VALUES(?, ?, ?, ?, ?)',
+                    [uuidv1(), name, username, password, paidValue], (err) => {
+                        if (err) {
+                            return console.log(err.message);
+                        }
+                        console.log('student registered');
+                        res.send('student registered');
+                    })
+            } else {
+                res.send("student already exists");
+            }
+        });
+    });
+});
+
 app.get('/add_student_in_class_waiting', function (req, res) {
     var classID = req.query.classID;
     var studentID = req.query.studentID;
@@ -151,14 +192,14 @@ app.get('/add_student_in_class_waiting', function (req, res) {
         res.send("error");
         return;
     }
-    db.run('INSERT INTO student_class(ID, Student_ID, Class_ID) VALUES(?, ?, ?)', 
+    db.run('INSERT INTO student_class(ID, Student_ID, Class_ID) VALUES(?, ?, ?)',
         [uuidv1(), studentID, classID], (err) => {
-        if (err) {
-            return console.log(err.message);
-        }
-        console.log('student record added in class in waiting');
-        res.send('student record added in class in waiting');
-    })
+            if (err) {
+                return console.log(err.message);
+            }
+            console.log('student record added in class in waiting');
+            res.send('student record added in class in waiting');
+        })
 });
 
 app.get('/login', function (req, res) {
