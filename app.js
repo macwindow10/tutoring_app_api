@@ -108,9 +108,32 @@ app.get('/get_all_classes_for_grade', function (req, res) {
 app.get('/get_all_students', function (req, res) {
     var data = [];
     db.serialize(() => {
-        db.each(`SELECT s.ID, s.Name, s.Paid, c.Name 'Class', g.Name 'Grade'
+        db.each(`SELECT s.ID, s.Name, s.Paid, g.Name 'Grade', c.Name 'Class', c.ScheduleDay 
             FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
-            INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID`, (err, row) => {
+            INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID
+            WHERE Is_In_Waiting=0`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            res.send(data);
+        });
+    });
+});
+
+app.get('/get_student_enrolled_grades_classes', function (req, res) {
+    var studentID = req.query.studentID;
+    var data = [];
+    if (studentID == null || studentID === "") {
+        res.send("error");
+        return;
+    }
+    db.serialize(() => {
+        db.each(`SELECT s.ID, s.Name, s.Paid, g.Name 'Grade', c.Name 'Class', c.ScheduleDay 
+            FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
+            INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID
+            WHERE Is_In_Waiting=0 AND s.ID='` + studentID + `'`, (err, row) => {
             if (err) {
                 console.error(err.message);
             }
