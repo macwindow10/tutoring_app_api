@@ -227,8 +227,8 @@ app.get('/add_student_in_class_waiting', function (req, res) {
         }, function () {
             console.log(data);
             if (data.length == 0) {
-                db.run('INSERT INTO student_class(ID, Student_ID, Class_ID) VALUES(?, ?, ?)',
-                    [uuidv1(), studentID, classID], (err) => {
+                db.run('INSERT INTO student_class(ID, Student_ID, Class_ID, Is_In_Waiting) VALUES(?, ?, ?, ?)',
+                    [uuidv1(), studentID, classID, 1], (err) => {
                         if (err) {
                             return console.log(err.message);
                         }
@@ -238,6 +238,42 @@ app.get('/add_student_in_class_waiting', function (req, res) {
             } else {
                 console.log('student already exists in this class');
                 res.send("student already exists in this class");
+            }
+        });
+    });
+});
+
+app.get('/update_student_in_class_waiting', function (req, res) {
+    var classID = req.query.classID;
+    var studentID = req.query.studentID;
+    if (classID == null || classID === "" ||
+        studentID == null || studentID === "") {
+        res.send("error");
+        return;
+    }
+    var data = [];
+    db.serialize(() => {
+        db.each(`SELECT ID
+            FROM student_class 
+            WHERE Student_ID='` + studentID + `' AND Class_ID='` + classID + `'`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            console.log(data);
+            if (data.length > 0) {
+                db.run(`UPDATE student_class SET Is_In_Waiting=0
+                    WHERE Student_ID='` + studentID + `' AND Class_ID='` + classID + `'`, (err) => {
+                        if (err) {
+                            return console.log(err.message);
+                        }
+                        console.log('student record updated in class in waiting');
+                        res.send('student record updated in class in waiting');
+                    });
+            } else {
+                console.log('student does not exist in this class');
+                res.send("student does not exist in this class");
             }
         });
     });
