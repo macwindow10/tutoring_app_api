@@ -72,8 +72,8 @@ app.get('/get_all_grades', function (req, res) {
 app.get('/get_all_classes', function (req, res) {
     var data = []; // for storing the rows.
     db.serialize(() => {
-        db.each(`SELECT c.ID, c.Name, c.ScheduleDay, g. ID 'GradeID', g.Name 'Grade'
-            FROM class c INNER JOIN grade g ON c.GradeID=g.ID ;`, (err, row) => {
+        db.each(`SELECT c.ID, c.Name, c.ScheduleDay, g.ID 'GradeID', g.Name 'Grade'
+            FROM class c INNER JOIN grade g ON c.GradeID=g.ID`, (err, row) => {
             if (err) {
                 console.error(err.message);
             }
@@ -101,6 +101,45 @@ app.get('/get_all_classes_for_grade', function (req, res) {
             data.push(row);
         }, function () {
             res.send(data);
+        });
+    });
+});
+
+app.get('/add_class', function (req, res) {
+    var gradeID = req.query.gradeID;
+    var name = req.query.name;
+    var scheduleDay = req.query.scheduleDay;
+    if (gradeID == null || gradeID === "" ||
+        name == null || name === "" ||
+        scheduleDay == null || scheduleDay === "") {
+        res.send("error");
+        return;
+    }
+    var data = [];
+    db.serialize(() => {
+        db.each(`SELECT ID
+            FROM class 
+            WHERE Name='` + name + `' AND GradeID='` + gradeID + `'`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            console.log(data);
+            if (data.length == 0) {
+                var newClassUUID = uuidv1();
+                db.run('INSERT INTO class(ID, Name, GradeID, ScheduleDay) VALUES(?, ?, ?, ?)',
+                    [newClassUUID, name, gradeID, scheduleDay], (err) => {
+                        if (err) {
+                            return console.log(err.message);
+                        }
+                        console.log('class added in grade');
+                        res.send(newClassUUID);
+                    });
+            } else {
+                console.log('class already exists in this grade');
+                res.send("class already exists in this grade");
+            }
         });
     });
 });
