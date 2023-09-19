@@ -115,6 +115,8 @@ app.get('/add_class', function (req, res) {
         res.send("error");
         return;
     }
+    console.log('add_class');
+    console.log(req.query);
     var data = [];
     db.serialize(() => {
         db.each(`SELECT ID
@@ -254,6 +256,8 @@ app.get('/add_student_in_class_waiting', function (req, res) {
         res.send("error");
         return;
     }
+    console.log('add_student_in_class_waiting');
+    console.log(req.query);
     var data = [];
     db.serialize(() => {
         db.each(`SELECT ID
@@ -266,8 +270,10 @@ app.get('/add_student_in_class_waiting', function (req, res) {
         }, function () {
             console.log(data);
             if (data.length == 0) {
-                db.run('INSERT INTO student_class(ID, Student_ID, Class_ID, Is_In_Waiting) VALUES(?, ?, ?, ?)',
-                    [uuidv1(), studentID, classID, 1], (err) => {
+                var dt = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+                console.log(dt);
+                db.run('INSERT INTO student_class(ID, Student_ID, Class_ID, Is_In_Waiting, Added_In_Waiting_On) VALUES(?, ?, ?, ?, ?)',
+                    [uuidv1(), studentID, classID, 1, dt], (err) => {
                         if (err) {
                             return console.log(err.message);
                         }
