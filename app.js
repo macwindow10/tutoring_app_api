@@ -149,10 +149,29 @@ app.get('/add_class', function (req, res) {
 app.get('/get_all_students', function (req, res) {
     var data = [];
     db.serialize(() => {
-        db.each(`SELECT s.ID, s.Name, CAST(s.Paid AS TEXT) Paid, g.ID 'GradeID', g.Name 'Grade', c.ID 'ClassID', c.Name 'Class', c.ScheduleDay 
+        db.each(`SELECT sc.ID, s.ID 'StudentID', s.Name, CAST(s.Paid AS TEXT) Paid, g.ID 'GradeID', g.Name 'Grade', c.ID 'ClassID', c.Name 'Class', c.ScheduleDay 
             FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
             INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID
-            WHERE Is_In_Waiting=0`, (err, row) => {
+            WHERE Is_In_Waiting=0 
+            ORDER BY g.Name, s.Name`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            res.send(data);
+        });
+    });
+});
+
+app.get('/get_all_students_in_waiting', function (req, res) {
+    var data = [];
+    db.serialize(() => {
+        db.each(`SELECT sc.ID, s.ID 'StudentID', s.Name, CAST(s.Paid AS TEXT) Paid, g.ID 'GradeID', g.Name 'Grade', c.ID 'ClassID', c.Name 'Class', c.ScheduleDay, sc.Added_In_Waiting_On 
+            FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
+            INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID
+            WHERE Is_In_Waiting=1 
+            ORDER BY g.Name, s.Name`, (err, row) => {
             if (err) {
                 console.error(err.message);
             }
@@ -249,6 +268,7 @@ app.get('/register', function (req, res) {
 });
 
 app.get('/add_student_in_class_waiting', function (req, res) {
+    console.log('add_student_in_class_waiting');
     var classID = req.query.classID;
     var studentID = req.query.studentID;
     if (classID == null || classID === "" ||
@@ -256,7 +276,6 @@ app.get('/add_student_in_class_waiting', function (req, res) {
         res.send("error");
         return;
     }
-    console.log('add_student_in_class_waiting');
     console.log(req.query);
     var data = [];
     db.serialize(() => {
