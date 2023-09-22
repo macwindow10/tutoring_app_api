@@ -5,9 +5,10 @@ SELECT * FROM student;
 SELECT c.ID, c.Name, c.ScheduleDay, g. ID 'GradeID', g.Name 'Grade'
 FROM class c INNER JOIN grade g ON c.GradeID=g.ID ;
 
-SELECT sc.ID, s.ID 'StudentID', s.Name, s.Paid, g.Name 'Grade', c.Name 'Class', c.ScheduleDay, sc.Is_In_Waiting
+SELECT sc.ID, s.ID 'StudentID', s.Name, s.Paid, g.Name 'Grade', c.Name 'Class', c.ScheduleDay, sc.Is_In_Waiting, sc.Added_In_Waiting_On
 FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
-	INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID ;
+	INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID 
+ORDER BY g.Name, s.Name;
 
 SELECT s.ID, s.Name, s.Paid, g.Name 'Grade', c.Name 'Class', c.ScheduleDay 
 FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
