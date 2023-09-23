@@ -329,12 +329,12 @@ app.get('/update_student_in_class_waiting', function (req, res) {
             if (data.length > 0) {
                 db.run(`UPDATE student_class SET Is_In_Waiting=0
                     WHERE Student_ID='` + studentID + `' AND Class_ID='` + classID + `'`, (err) => {
-                        if (err) {
-                            return console.log(err.message);
-                        }
-                        console.log('student record updated in class in waiting');
-                        res.send('student record updated in class in waiting');
-                    });
+                    if (err) {
+                        return console.log(err.message);
+                    }
+                    console.log('student record updated in class in waiting');
+                    res.send('student record updated in class in waiting');
+                });
             } else {
                 console.log('student does not exist in this class');
                 res.send("student does not exist in this class");
@@ -346,10 +346,10 @@ app.get('/update_student_in_class_waiting', function (req, res) {
 app.get('/get_all_attendances', function (req, res) {
     var data = [];
     db.serialize(() => {
-        db.each(`SELECT sc.ID, s.ID 'StudentID', s.Name, CAST(s.Paid AS TEXT) Paid, g.ID 'GradeID', g.Name 'Grade', c.ID 'ClassID', c.Name 'Class', c.ScheduleDay 
+        db.each(`SELECT sc.ID, s.ID 'StudentID', s.Name, CAST(s.Paid AS TEXT) Paid, g.ID 'GradeID', g.Name 'Grade', c.ID 'ClassID', c.Name 'Class', c.ScheduleDay, a.Date
             FROM student s INNER JOIN student_class sc ON s.ID=sc.Student_ID 
             INNER JOIN class c ON sc.Class_ID=c.ID INNER JOIN grade g ON c.GradeID=g.ID
-            INNER JOIN attendances a ON a.Student_Class_ID=sc.ID
+            INNER JOIN attendance a ON a.Student_Class_ID=sc.ID
             WHERE Is_In_Waiting=0 
             ORDER BY g.Name, s.Name`, (err, row) => {
             if (err) {
@@ -358,6 +358,51 @@ app.get('/get_all_attendances', function (req, res) {
             data.push(row);
         }, function () {
             res.send(data);
+        });
+    });
+});
+
+app.get('/mark_attendance', function (req, res) {
+    console.log('mark_attendance');
+    var studentClassID = req.query.studentClassID;
+    var newValue = req.query.newValue;
+    if (studentClassID == null || studentClassID === "" ||
+        newValue == null || newValue === "") {
+        res.send("error");
+        return;
+    }
+    var data = [];
+    db.serialize(() => {
+        db.each(`SELECT ID
+            FROM attendance 
+            WHERE Student_Class_ID='` + studentClassID + `'`, (err, row) => {
+            if (err) {
+                console.error(err.message);
+            }
+            data.push(row);
+        }, function () {
+            console.log(data);
+            var dt = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+            console.log(dt);
+            if (data.length > 0) {
+                db.run(`UPDATE attendance SET Date='` + dt + `' 
+                    WHERE ID='` + data[0]["ID"] + `'`, (err) => {
+                    if (err) {
+                        return console.log(err.message);
+                    }
+                    console.log('student record updated in attendance');
+                    res.send('student record updated in attendance');
+                });
+            } else {
+                db.run('INSERT INTO attendance(ID, Student_Class_ID, Date) VALUES(?, ?, ?)',
+                    [uuidv1(), studentClassID, dt], (err) => {
+                        if (err) {
+                            return console.log(err.message);
+                        }
+                        console.log('student record added in attendance');
+                        res.send('student record added in attendance');
+                    });
+            }
         });
     });
 });
