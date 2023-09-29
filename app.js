@@ -308,6 +308,7 @@ app.get('/add_student_in_class_waiting', function (req, res) {
 });
 
 app.get('/update_student_in_class_waiting', function (req, res) {
+    console.log('update_student_in_class_waiting');
     var classID = req.query.classID;
     var studentID = req.query.studentID;
     if (classID == null || classID === "" ||
@@ -340,6 +341,26 @@ app.get('/update_student_in_class_waiting', function (req, res) {
                 res.send("student does not exist in this class");
             }
         });
+    });
+});
+
+app.get('/update_student_payment_status', function (req, res) {
+    console.log('update_student_payment_status');
+    var studentID = req.query.studentID;
+    var paidValue = req.query.paidValue;
+    if (studentID == null || studentID === "" ||
+        paidValue == null || paidValue === "") {
+        res.send("error");
+        return;
+    }
+    console.log(req.query);
+    db.run(`UPDATE student SET Paid='` + paidValue + `' ` + 
+        `WHERE ID='` + studentID + `'`, (err) => {
+        if (err) {
+            return console.log(err.message);
+        }
+        console.log('student payment status updated');
+        res.send('student payment status updated');
     });
 });
 
