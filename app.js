@@ -387,6 +387,7 @@ app.get('/mark_attendance', function (req, res) {
     console.log('mark_attendance');
     var studentClassID = req.query.studentClassID;
     var newValue = req.query.newValue;
+    console.log(req.query);
     if (studentClassID == null || studentClassID === "" ||
         newValue == null || newValue === "") {
         res.send("error");
@@ -405,9 +406,17 @@ app.get('/mark_attendance', function (req, res) {
             console.log(data);
             var dt = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
             console.log(dt);
-            if (data.length > 0) {
+            if (data.length > 0 && newValue == "true") {
                 db.run(`UPDATE attendance SET Date='` + dt + `' 
                     WHERE ID='` + data[0]["ID"] + `'`, (err) => {
+                    if (err) {
+                        return console.log(err.message);
+                    }
+                    console.log('student record updated in attendance');
+                    res.send('student record updated in attendance');
+                });
+            } else if (data.length > 0 && newValue == "false") {
+                db.run(`DELETE FROM attendance WHERE ID='` + data[0]["ID"] + `'`, (err) => {
                     if (err) {
                         return console.log(err.message);
                     }
